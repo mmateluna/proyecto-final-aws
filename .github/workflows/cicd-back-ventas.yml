@@ -1,0 +1,44 @@
+name: CI/CD - Backend Ventas
+
+on:
+  push:
+    branches: [ deploy ]
+    paths:
+      - 'back-Ventas_SpringBoot/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build y Push Ventas
+        run: |
+          docker build -t back-ventas ./back-Ventas_SpringBoot/Springboot-API-REST
+          docker tag back-ventas:latest ${{ secrets.ECR_REPO_VENTAS }}:latest
+          docker push ${{ secrets.ECR_REPO_VENTAS }}:latest
+
+      - name: Deploy en EC2 Backend
+        run: |
+          aws ssm send-command \
+            --instance-ids ${{ secrets.EC2_BACK_ID }} \
+            --document-name "AWS-RunShellScript" \
+            --parameters '{"commands":[
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+              "docker pull ${{ secrets.ECR_REPO_VENTAS }}:latest",
+              "docker stop ventas-container || true",
+              "docker rm ventas-container || true",
+              "docker run -d --name ventas-container -p 8081:8080 ${{ secrets.ECR_REPO_VENTAS }}:latest"
+            ]}'

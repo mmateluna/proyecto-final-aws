@@ -1,0 +1,44 @@
+name: CI/CD - Frontend Despacho
+
+on:
+  push:
+    branches: [ deploy ]
+    paths:
+      - 'front_despacho/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build y Push Frontend
+        run: |
+          docker build -t front-despacho ./front_despacho
+          docker tag front-despacho:latest ${{ secrets.ECR_REPO_FRONT }}:latest
+          docker push ${{ secrets.ECR_REPO_FRONT }}:latest
+
+      - name: Deploy en EC2 Frontend
+        run: |
+          aws ssm send-command \
+            --instance-ids ${{ secrets.EC2_FRONT_ID }} \
+            --document-name "AWS-RunShellScript" \
+            --parameters '{"commands":[
+              "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
+              "docker pull ${{ secrets.ECR_REPO_FRONT }}:latest",
+              "docker stop front-container || true",
+              "docker rm front-container || true",
+              "docker run -d --name front-container -p 80:80 ${{ secrets.ECR_REPO_FRONT }}:latest"
+            ]}'
