@@ -1,8 +1,10 @@
-name: CI/CD - Frontend
+name: CI/CD - Frontend Despacho
 
 on:
   push:
-    branches: [deploy]
+    branches: [ deploy ]
+    paths:
+      - 'front_despacho/**'
 
 jobs:
   build-and-deploy:
@@ -38,5 +40,5 @@ jobs:
               "docker pull ${{ secrets.ECR_REPO_FRONT }}:latest",
               "docker stop front-container || true",
               "docker rm front-container || true",
-              "docker run -d --name front-container --restart unless-stopped -p 80:80 ${{ secrets.ECR_REPO_FRONT }}:latest"
+              "docker run -d --name front-container -p 80:80 ${{ secrets.ECR_REPO_FRONT }}:latest"
             ]}'

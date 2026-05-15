@@ -2,7 +2,7 @@ name: CI/CD - Backend Despachos
 
 on:
   push:
-    branches: [deploy]
+    branches: [ deploy ]
 
 jobs:
   build-and-deploy:
@@ -34,11 +34,9 @@ jobs:
             --instance-ids ${{ secrets.EC2_BACK_ID }} \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
-              "docker network create proyecto-net 2>/dev/null || true",
-              "docker start mysql-despachos 2>/dev/null || docker run -d --name mysql-despachos --network proyecto-net -e MYSQL_ROOT_PASSWORD=rootpassword -e MYSQL_DATABASE=despachos_db mysql:8.0",
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
               "docker pull ${{ secrets.ECR_REPO_DESPACHOS }}:latest",
               "docker stop despachos-container || true",
               "docker rm despachos-container || true",
-              "docker run -d --name despachos-container --network proyecto-net --restart unless-stopped -p 8082:8080 ${{ secrets.ECR_REPO_DESPACHOS }}:latest"
+              "docker run -d --name despachos-container -p 8082:8080 -e DB_ENDPOINT=tu_ip_o_endpoint -e DB_PORT=3306 -e DB_NAME=tu_db -e DB_USER=tu_user -e DB_PASS=tu_pass ${{ secrets.ECR_REPO_DESPACHOS }}:latest"
             ]}'
