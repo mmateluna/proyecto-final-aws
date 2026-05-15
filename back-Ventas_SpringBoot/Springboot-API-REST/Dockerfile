@@ -8,7 +8,7 @@ RUN mvn clean package -DskipTests
 # Stage 2: Ejecución
 FROM openjdk:17-jdk-slim
 WORKDIR /app
-# Crear un usuario para no usar el "root" (Seguridad)
+# Crear un usuario para no usar el "root" (Seguridad) COMENTARIO PARA RESUBIR
 RUN useradd -m myuser
 USER myuser
 COPY --from=build /app/target/*.jar app.jar
