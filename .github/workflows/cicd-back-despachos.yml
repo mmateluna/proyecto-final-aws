@@ -40,12 +40,12 @@ jobs:
               "docker pull ${{ secrets.ECR_REPO_DESPACHOS }}:latest",
               "docker stop despachos-container || true",
               "docker rm despachos-container || true",
-              "docker run -d --name despachos-container \
-                -p 8082:8080 \
-                -e DB_ENDPOINT=tu_endpoint_de_rds_o_la_ip \
-                -e DB_PORT=3306 \
-                -e DB_NAME=tu_nombre_db \
-                -e DB_USER=tu_usuario \
-                -e DB_PASS=tu_password \
+              "docker run -d --name despachos-container 
+                -p 8082:8080 
+                -e DB_ENDPOINT=tu_endpoint_de_rds_o_la_ip 
+                -e DB_PORT=3306 
+                -e DB_NAME=tu_nombre_db 
+                -e DB_USER=tu_usuario 
+                -e DB_PASS=tu_password 
                 ${{ secrets.ECR_REPO_DESPACHOS }}:latest"
             ]}'
