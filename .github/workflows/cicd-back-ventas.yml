@@ -1,44 +1,31 @@
-name: CI/CD - Backend Ventas
-
-on:
-  push:
-    branches: [ deploy ]
-    paths:
-      - 'back-Ventas_SpringBoot/**'
-
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-
-      - name: Configurar AWS
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Login ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build y Push Ventas
-        run: |
-          docker build -t back-ventas ./back-Ventas_SpringBoot/Springboot-API-REST
-          docker tag back-ventas:latest ${{ secrets.ECR_REPO_VENTAS }}:latest
-          docker push ${{ secrets.ECR_REPO_VENTAS }}:latest
-
-      - name: Deploy en EC2 Backend
+- name: Deploy con Docker Compose
         run: |
           aws ssm send-command \
             --instance-ids ${{ secrets.EC2_BACK_ID }} \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-              "docker pull ${{ secrets.ECR_REPO_VENTAS }}:latest",
-              "docker stop ventas-container || true",
-              "docker rm ventas-container || true",
-              "docker run -d --name ventas-container -p 8081:8080 ${{ secrets.ECR_REPO_VENTAS }}:latest"
+              "echo \"version: '"'3.8'"'
+services:
+  db-mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_DATABASE: despacho_db
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - '"'3306:3306'"'
+  back-ventas:
+    image: ${{ secrets.ECR_REPO_VENTAS }}:latest
+    depends_on:
+      - db-mysql
+    ports:
+      - '"'8081:8080'"'
+    environment:
+      - DB_ENDPOINT=db-mysql
+      - DB_PORT=3306
+      - DB_NAME=despacho_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root_password\" > docker-compose.yml",
+              "docker-compose up -d"
             ]}'
