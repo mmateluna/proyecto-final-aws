@@ -2,7 +2,7 @@ name: CI/CD - Backend Ventas
 
 on:
   push:
-    branches: [ deploy ]
+    branches: [deploy]
 
 jobs:
   build-and-deploy:
@@ -34,9 +34,11 @@ jobs:
             --instance-ids ${{ secrets.EC2_BACK_ID }} \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
+              "docker network create proyecto-net 2>/dev/null || true",
+              "docker start mysql-ventas 2>/dev/null || docker run -d --name mysql-ventas --network proyecto-net -e MYSQL_ROOT_PASSWORD=rootpassword -e MYSQL_DATABASE=ventas_db mysql:8.0",
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
               "docker pull ${{ secrets.ECR_REPO_VENTAS }}:latest",
               "docker stop ventas-container || true",
               "docker rm ventas-container || true",
-              "docker run -d --name ventas-container -p 8081:8080 -e DB_ENDPOINT=tu_ip_o_endpoint -e DB_PORT=3306 -e DB_NAME=tu_db -e DB_USERNAME=root -e DB_PASSWORD=root_password ${{ secrets.ECR_REPO_VENTAS }}:latest"
+              "docker run -d --name ventas-container --network proyecto-net --restart unless-stopped -p 8081:8080 ${{ secrets.ECR_REPO_VENTAS }}:latest"
             ]}'
