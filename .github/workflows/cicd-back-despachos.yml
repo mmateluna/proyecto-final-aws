@@ -5,46 +5,43 @@
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-              "cat <<EOF > docker-compose.yml
-          version: \"3.8\"
-          services:
-            db-mysql:
-              image: mysql:8.0
-              container_name: mysql-db
-              restart: always
-              environment:
-                MYSQL_DATABASE: despacho_db
-                MYSQL_ROOT_PASSWORD: root_password
-              ports:
-                - \"3306:3306\"
-
-            back-ventas:
-              image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO_VENTAS }}:latest
-              container_name: ventas-container
-              depends_on:
-                - db-mysql
-              ports:
-                - \"8081:8080\"
-              environment:
-                - DB_ENDPOINT=db-mysql
-                - DB_PORT=3306
-                - DB_NAME=despacho_db
-                - DB_USERNAME=root
-                - DB_PASSWORD=root_password
-
-            back-despachos:
-              image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO_DESPACHOS }}:latest
-              container_name: despachos-container
-              depends_on:
-                - db-mysql
-              ports:
-                - \"8082:8080\"
-              environment:
-                - DB_ENDPOINT=db-mysql
-                - DB_PORT=3306
-                - DB_NAME=despacho_db
-                - DB_USERNAME=root
-                - DB_PASSWORD=root_password
-          EOF",
+              "echo \"version: '\''3.8'\''\" > docker-compose.yml",
+              "echo \"services:\" >> docker-compose.yml",
+              "echo \"  db-mysql:\" >> docker-compose.yml",
+              "echo \"    image: mysql:8.0\" >> docker-compose.yml",
+              "echo \"    container_name: mysql-db\" >> docker-compose.yml",
+              "echo \"    restart: always\" >> docker-compose.yml",
+              "echo \"    environment:\" >> docker-compose.yml",
+              "echo \"      MYSQL_DATABASE: despacho_db\" >> docker-compose.yml",
+              "echo \"      MYSQL_ROOT_PASSWORD: root_password\" >> docker-compose.yml",
+              "echo \"    ports:\" >> docker-compose.yml",
+              "echo \"      - '\''3306:3306'\''\" >> docker-compose.yml",
+              "echo \"  back-ventas:\" >> docker-compose.yml",
+              "echo \"    image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO_VENTAS }}:latest\" >> docker-compose.yml",
+              "echo \"    container_name: ventas-container\" >> docker-compose.yml",
+              "echo \"    depends_on:\" >> docker-compose.yml",
+              "echo \"      - db-mysql\" >> docker-compose.yml",
+              "echo \"    ports:\" >> docker-compose.yml",
+              "echo \"      - '\''8081:8080'\''\" >> docker-compose.yml",
+              "echo \"    environment:\" >> docker-compose.yml",
+              "echo \"      - DB_ENDPOINT=db-mysql\" >> docker-compose.yml",
+              "echo \"      - DB_PORT=3306\" >> docker-compose.yml",
+              "echo \"      - DB_NAME=despacho_db\" >> docker-compose.yml",
+              "echo \"      - DB_USERNAME=root\" >> docker-compose.yml",
+              "echo \"      - DB_PASSWORD=root_password\" >> docker-compose.yml",
+              "echo \"  back-despachos:\" >> docker-compose.yml",
+              "echo \"    image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO_DESPACHOS }}:latest\" >> docker-compose.yml",
+              "echo \"    container_name: despachos-container\" >> docker-compose.yml",
+              "echo \"    depends_on:\" >> docker-compose.yml",
+              "echo \"      - db-mysql\" >> docker-compose.yml",
+              "echo \"    ports:\" >> docker-compose.yml",
+              "echo \"      - '\''8082:8080'\''\" >> docker-compose.yml",
+              "echo \"    environment:\" >> docker-compose.yml",
+              "echo \"      - DB_ENDPOINT=db-mysql\" >> docker-compose.yml",
+              "echo \"      - DB_PORT=3306\" >> docker-compose.yml",
+              "echo \"      - DB_NAME=despacho_db\" >> docker-compose.yml",
+              "echo \"      - DB_USERNAME=root\" >> docker-compose.yml",
+              "echo \"      - DB_PASSWORD=root_password\" >> docker-compose.yml",
+              "docker-compose down || true",
               "docker-compose up -d"
             ]}'
