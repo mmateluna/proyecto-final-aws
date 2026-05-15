@@ -1,16 +1,12 @@
 name: CI/CD - Backend Ventas
-
 on:
   push:
     branches: [ deploy ]
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Configurar AWS
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -18,17 +14,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Login ECR
         uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build y Push Ventas
+      - name: Build y Push
         run: |
           docker build -t back-ventas ./back-Ventas_SpringBoot/Springboot-API-REST
           docker tag back-ventas:latest ${{ secrets.ECR_REPO_VENTAS }}:latest
           docker push ${{ secrets.ECR_REPO_VENTAS }}:latest
-
-      - name: Deploy en EC2 Backend
+      - name: Deploy
         run: |
           aws ssm send-command \
             --instance-ids ${{ secrets.EC2_BACK_ID }} \
@@ -38,5 +31,5 @@ jobs:
               "docker pull ${{ secrets.ECR_REPO_VENTAS }}:latest",
               "docker stop ventas-container || true",
               "docker rm ventas-container || true",
-              "docker run -d --name ventas-container -p 8081:8080 -e DB_ENDPOINT=tu_ip_o_endpoint -e DB_PORT=3306 -e DB_NAME=tu_db -e DB_USERNAME=root -e DB_PASSWORD=root_password ${{ secrets.ECR_REPO_VENTAS }}:latest"
+              "docker run -d --name ventas-container -p 8081:8080 --network host -e DB_ENDPOINT=127.0.0.1 -e DB_PORT=3306 -e DB_NAME=cloud_db -e DB_USERNAME=root -e DB_PASSWORD=rootpassword ${{ secrets.ECR_REPO_VENTAS }}:latest"
             ]}'

@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: cloud_db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql  # PUNTO 2: Named volume para persistencia
+
+  back-ventas:
+    build: ./back-Ventas_SpringBoot/Springboot-API-REST
+    container_name: ventas-container
+    depends_on:
+      - mysql-db
+    environment:
+      - DB_ENDPOINT=mysql-db
+      - DB_PORT=3306
+      - DB_NAME=cloud_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+
+  back-despachos:
+    build: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+    container_name: despachos-container
+    depends_on:
+      - mysql-db
+    environment:
+      - DB_ENDPOINT=mysql-db
+      - DB_PORT=3306
+      - DB_NAME=cloud_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=rootpassword
+
+volumes:
+  db_data: # Justificación: Named volume es gestionado por Docker, ideal para producción en AWS.
