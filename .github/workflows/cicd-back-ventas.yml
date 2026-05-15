@@ -1,47 +1,51 @@
-- name: Deploy Ecosistema Completo con Docker Compose
+name: CI/CD - Backend Ventas
+
+on:
+  push:
+    branches: [ deploy ]
+    paths:
+      - 'back-Ventas_SpringBoot/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build y Push Ventas
+        run: |
+          docker build -t back-ventas ./back-Ventas_SpringBoot/Springboot-API-REST
+          docker tag back-ventas:latest ${{ secrets.ECR_REPO_VENTAS }}:latest
+          docker push ${{ secrets.ECR_REPO_VENTAS }}:latest
+
+      - name: Deploy en EC2 Backend
         run: |
           aws ssm send-command \
             --instance-ids ${{ secrets.EC2_BACK_ID }} \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
               "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-              "echo \"version: '\''3.8'\''\" > docker-compose.yml",
-              "echo \"services:\" >> docker-compose.yml",
-              "echo \"  db-mysql:\" >> docker-compose.yml",
-              "echo \"    image: mysql:8.0\" >> docker-compose.yml",
-              "echo \"    container_name: mysql-db\" >> docker-compose.yml",
-              "echo \"    restart: always\" >> docker-compose.yml",
-              "echo \"    environment:\" >> docker-compose.yml",
-              "echo \"      MYSQL_DATABASE: despacho_db\" >> docker-compose.yml",
-              "echo \"      MYSQL_ROOT_PASSWORD: root_password\" >> docker-compose.yml",
-              "echo \"    ports:\" >> docker-compose.yml",
-              "echo \"      - '\''3306:3306'\''\" >> docker-compose.yml",
-              "echo \"  back-ventas:\" >> docker-compose.yml",
-              "echo \"    image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO_VENTAS }}:latest\" >> docker-compose.yml",
-              "echo \"    container_name: ventas-container\" >> docker-compose.yml",
-              "echo \"    depends_on:\" >> docker-compose.yml",
-              "echo \"      - db-mysql\" >> docker-compose.yml",
-              "echo \"    ports:\" >> docker-compose.yml",
-              "echo \"      - '\''8081:8080'\''\" >> docker-compose.yml",
-              "echo \"    environment:\" >> docker-compose.yml",
-              "echo \"      - DB_ENDPOINT=db-mysql\" >> docker-compose.yml",
-              "echo \"      - DB_PORT=3306\" >> docker-compose.yml",
-              "echo \"      - DB_NAME=despacho_db\" >> docker-compose.yml",
-              "echo \"      - DB_USERNAME=root\" >> docker-compose.yml",
-              "echo \"      - DB_PASSWORD=root_password\" >> docker-compose.yml",
-              "echo \"  back-despachos:\" >> docker-compose.yml",
-              "echo \"    image: ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPO_DESPACHOS }}:latest\" >> docker-compose.yml",
-              "echo \"    container_name: despachos-container\" >> docker-compose.yml",
-              "echo \"    depends_on:\" >> docker-compose.yml",
-              "echo \"      - db-mysql\" >> docker-compose.yml",
-              "echo \"    ports:\" >> docker-compose.yml",
-              "echo \"      - '\''8082:8080'\''\" >> docker-compose.yml",
-              "echo \"    environment:\" >> docker-compose.yml",
-              "echo \"      - DB_ENDPOINT=db-mysql\" >> docker-compose.yml",
-              "echo \"      - DB_PORT=3306\" >> docker-compose.yml",
-              "echo \"      - DB_NAME=despacho_db\" >> docker-compose.yml",
-              "echo \"      - DB_USERNAME=root\" >> docker-compose.yml",
-              "echo \"      - DB_PASSWORD=root_password\" >> docker-compose.yml",
-              "docker-compose down || true",
-              "docker-compose up -d"
+              "docker pull ${{ secrets.ECR_REPO_VENTAS }}:latest",
+              "docker stop ventas-container || true",
+              "docker rm ventas-container || true",
+              "docker run -d --name ventas-container \
+                -p 8081:8080 \
+                -e DB_ENDPOINT=tu_endpoint_de_rds_o_la_ip \
+                -e DB_PORT=3306 \
+                -e DB_NAME=tu_nombre_db \
+                -e DB_USER=tu_usuario \
+                -e DB_PASS=tu_password \
+                ${{ secrets.ECR_REPO_VENTAS }}:latest"
             ]}'
