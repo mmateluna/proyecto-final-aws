@@ -3,8 +3,6 @@ name: CI/CD - Backend Despachos
 on:
   push:
     branches: [ deploy ]
-    paths:
-      - 'back-Despachos_SpringBoot/**'
 
 jobs:
   build-and-deploy:
@@ -40,12 +38,5 @@ jobs:
               "docker pull ${{ secrets.ECR_REPO_DESPACHOS }}:latest",
               "docker stop despachos-container || true",
               "docker rm despachos-container || true",
-              "docker run -d --name despachos-container 
-                -p 8082:8080 
-                -e DB_ENDPOINT=tu_endpoint_de_rds_o_la_ip 
-                -e DB_PORT=3306 
-                -e DB_NAME=tu_nombre_db 
-                -e DB_USER=tu_usuario 
-                -e DB_PASS=tu_password 
-                ${{ secrets.ECR_REPO_DESPACHOS }}:latest"
+              "docker run -d --name despachos-container -p 8082:8080 -e DB_ENDPOINT=tu_ip_o_endpoint -e DB_PORT=3306 -e DB_NAME=tu_db -e DB_USER=tu_user -e DB_PASS=tu_pass ${{ secrets.ECR_REPO_DESPACHOS }}:latest"
             ]}'
